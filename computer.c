@@ -181,6 +181,52 @@ unsigned int Fetch ( int addr) {
 /* Decode instr, returning decoded instruction. */
 void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
     /* Your code goes here */
+
+    //Decode Instruction
+
+    //Find opcode (26th - 32nd bit)... we use AND operator to isolate first 6 bits
+    int opcode = (instr >> 26) & 0x3f;
+    d.op = opcode;
+
+    if (opcode == 0){ //Identify format based on opcode use InstrType Enum
+        d.type = InstrType.R;
+
+        d.regs.r.rs = (instr >> 21) & 0x1f; //Isolate first 5 bits
+        d.regs.r.rt = (instr >> 16) & 0x1f;
+        d.regs.r.rd = (instr >> 11) & 0x1f;
+        d.regs.r.shamt = (instr >> 6) & 0x1f;
+        int funct = instr & 0x3f
+        d.regs.r.funct = funct; //6 bits
+
+        //Lookup operation with funct
+        
+
+        //Register Reads 
+        rVals.R_rs = mips.registers[d.regs.r.rs];
+        rVals.R_rt = mips.registers[d.regs.r.rt];
+        rVals.R_rd = mips.registers[d.regs.r.rd];
+
+    } else if(opcode == 2 || opcode == 3){
+        d.type = InstrType.J;
+
+        d.regs.j.target = instr & 0x3FFFFFF;
+
+    } else {
+        d.type = InstrType.I;
+
+        d.regs.i.rs = (instr >> 21) & 0x1f; //Isloate 5 bits
+        d.regs.i.rt = (instr >> 16) & 0x1f;
+
+        //Is this the properly extended version?
+        d.regs.addr_or_immed = instr & 0xFFFF; //First 16 bits
+
+        //Register Reads
+        rVals.R_rs = mips.registers[d.regs.i.rs];
+        rVals.R_rt = mips.registers[d.regs.i.rt];
+
+        
+    }
+
 }
 
 /*
@@ -189,11 +235,203 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
  */
 void PrintInstruction ( DecodedInstr* d) {
     /* Your code goes here */
+    if (d.op == 0){
+        switch (d.regs.r.funct){
+            case 0x21: //addu
+                printf("addu\t");
+                break;
+
+            case 0x23: //subu
+                printf("subu\t");
+                break;
+
+            case 0x0: //sll
+                printf("sll\t");
+                break;
+
+            case 0x2: //srl
+                printf("srl\t");
+                break;
+
+            case 0x24: //and
+                printf("and\t");
+                break;
+
+            case 0x25: //or
+                printf("or\t");
+                break;
+
+            case 0x2a: //slt
+                printf("slt\t");
+                break;
+
+            case 0x8: //jr
+                printf("jr\t");
+                break;
+
+            default:
+            exit(0);
+        }
+    } else if(d.op == 2){
+        print("j\t");
+    } else if(d.op == 3){
+        print("jal\t");
+    } else {
+        switch(d.op){
+            case 9: //addiu
+                printf("addiu\t");
+                break;
+
+            case 8: //andi
+                printf("andi\t");
+                break;
+
+            case 13: //ori
+                printf("ori\t");
+                break;
+
+            case 15: //lui
+                printf("lui\t");
+                break;
+
+            case 4: //beq
+                printf("beq\t");
+                break;
+
+            case 5: //bne
+                printf("bne\t");
+                break;
+
+            case 35: //lw
+                printf("lw\t");
+                break;
+
+            case 43: //sw
+                printf("sw\t");
+                break;
+
+            default: //bad instruction
+                exit(0);
+                break;
+        }
+    }
+
+    if (d.type == InstrType.R){
+        if (d.regs.r.funct == 0x8){ //jr
+            printf("$%d", d.regs.r.rs);
+        } else if (d.regs.r.funct == 0x0 || d.regs.r.funct == 0x2){ //sll
+            printf("$%d, $%d, %d", d.regs.r.rd, d.regs.r.rt, d.regs.r.shamt);
+        } else { //add
+            printf("$%d, $%d, $%d", d.regs.r.rd, d.regs.r.rs, d.regs.r.rt);
+        }
+    } else if (d.type == InstrType.I){
+        if (d.op == 35 || d.op == 43){ //lw and store word
+            printf("$%d, %d($%d)", d.regs.i.rt, d.regs.i.addr_or_immed, d.regs.i.rs);
+        } else if(d.op == 4 || d.op == 5){ //branch
+            printf("$%d, $%d, %x", d.regs.i.rs, d.regs.i.rt, d.regs.i.addr_or_immed);
+        } else if(d.op == 15 || d.op == 12 || d.op == 13){ //andi, ori, lui
+            printf("$%d, $%d, %x", d.regs.i.rt, d.regs.i.rs, d.regs.i.addr_or_immed);
+        } else{ //addi
+            printf("$%d, $%d, %d", d.regs.i.rt, d.regs.i.rs, d.regs.i.addr_or_immed);
+        }
+    } else if (d.type == InstrType.J){
+        printf("%x", d.regs.j.target)
+    }
 }
 
 /* Perform computation needed to execute d, returning computed value */
 int Execute ( DecodedInstr* d, RegVals* rVals) {
     /* Your code goes here */
+    if (d.op == 0){
+        switch (d.regs.r.funct){
+            case 0x21: //addu
+                return (unsigned)(rVals.R_rs + rVals.R_rt);
+                break;
+
+            case 0x23: //subu
+                return (unsigned)(rVals.R_rs - rVals.R_rt);
+                break;
+
+            case 0x0: //sll
+                return (rVals.R_rt << d.regs.r.shamt);
+                break;
+
+            case 0x2: //srl
+                return (rVals.R_rt >> d.regs.r.shamt);
+                break;
+
+            case 0x24: //and
+                return (rVals.R_rt & rVals.R_rs);
+                break;
+
+            case 0x25: //or
+                return (rVals.R_rt | rVals.R_rs);
+                break;
+
+            case 0x2a: //slt
+                return (int)(rVals.R_rt < rVals.R_rs);
+                break;
+
+            case 0x8: //jr
+                return rVals.R_rs;
+                break;
+
+            default:
+            exit(0);
+        }
+    } else if(d.op == 2){ //return address for UpdatePC
+        return d.regs.j.target;
+    } else if(d.op == 3){ //return address for UpdatePC
+        return d.regs.j.target;
+    } else {
+        switch(d.op){
+            case 9: //addiu
+                return (unsigned)(rVals.R_rs + d.regs.i.addr_or_immed);
+                break;
+
+            case 8: //andi
+                return (rVals.R_rs & d.regs.i.addr_or_immed);
+                break;
+
+            case 13: //ori
+                return (rVals.R_rs | d.regs.i.addr_or_immed);
+                break;
+
+            case 15: //lui
+                int shifted = (d.regs.i.addr_or_immed << 16);
+                return shifted;
+                break;
+
+            case 4: //beq
+                if(rVals.R_rs == rVals.R_rt){ //return branch address
+                    return d.regs.i.addr_or_immed;
+                } else{
+                    return 0;
+                }
+                break;
+
+            case 5: //bne
+                if(rVals.R_rs == rVals.R_rt){ //return branch address
+                    return 0; //0 means dont add to the branch address
+                } else{
+                    return d.regs.i.addr_or_immed;
+                }
+                break;
+
+            case 35: //lw
+                return rVals.R_rs + d.regs.i.addr_or_immed 
+                break;
+
+            case 43: //sw
+                return rVals.R_rs + d.regs.i.addr_or_immed 
+                break;
+
+            default: //bad instruction
+                exit(0);
+                break;
+        }
+    }
+  
   return 0;
 }
 
@@ -205,6 +443,12 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
 void UpdatePC ( DecodedInstr* d, int val) {
     mips.pc+=4;
     /* Your code goes here */
+    if (d.op == 2 || d.op == 3){ //jumps
+        mips.pc = val;
+
+    } else (d.op == 4 || d.op == 5){ // branches
+        mip.pc += val;
+    }
 }
 
 /*
@@ -218,8 +462,26 @@ void UpdatePC ( DecodedInstr* d, int val) {
  *
  */
 int Mem( DecodedInstr* d, int val, int *changedMem) {
-    /* Your code goes here */
-  return 0;
+   /* Your code goes here */
+    if (val >= MAXNUMINSTRS+MAXNUMDATA){
+        printf("Memory Access Exception at %d: address %x", mips.pc, val)
+        exit(0);
+        return -1;
+    }
+
+
+    if (d.op == 35){ //lw
+        int loaded_word = mips.memory[val];
+        *changedMem = -1;
+        return loaded_word;
+    } else if(d.op == 43){//sw
+        mips.memory[val] = mips.registers[d.regs.i.rt];
+        *changedMem = val;
+        return -1;
+    } else {
+        *changedMem = -1
+        return val;
+    }
 }
 
 /* 
@@ -227,7 +489,24 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
  * (including jal, which modifies $ra) --
  * put the index of the modified register in *changedReg,
  * otherwise put -1 in *changedReg.
- */
+ */;
+
 void RegWrite( DecodedInstr* d, int val, int *changedReg) {
     /* Your code goes here */
+    if (val != -1){ //If we do something with registers
+        if (d.type == InstrType.R){
+            mips.registers[d.regs.r.rd] = val;
+            *changedReg = d.regs.r.rd;
+
+        } else if (d.type == InstrType.I){
+            mips.registers[d.regs.i.rt] = val;
+            *changedReg = d.regs.r.rt;
+
+        } else if (d.type == InstrType.J){
+            if (d.op == 3){
+                mips.registers[31] = val;
+                *changedReg = 31;
+            }
+        }
+    }
 }
