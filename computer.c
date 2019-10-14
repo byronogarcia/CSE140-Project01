@@ -186,45 +186,47 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
 
     //Find opcode (26th - 32nd bit)... we use AND operator to isolate first 6 bits
     int opcode = (instr >> 26) & 0x3f;
-    d.op = opcode;
+    d->op = opcode;
 
     if (opcode == 0){ //Identify format based on opcode use InstrType Enum
-        d.type = InstrType.R;
+        d->type = 0; //R Instruction
 
-        d.regs.r.rs = (instr >> 21) & 0x1f; //Isolate first 5 bits
-        d.regs.r.rt = (instr >> 16) & 0x1f;
-        d.regs.r.rd = (instr >> 11) & 0x1f;
-        d.regs.r.shamt = (instr >> 6) & 0x1f;
-        int funct = instr & 0x3f
-        d.regs.r.funct = funct; //6 bits
+        d->regs.r.rs = (instr >> 21) & 0x1f; //Isolate first 5 bits
+        d->regs.r.rt = (instr >> 16) & 0x1f;
+        d->regs.r.rd = (instr >> 11) & 0x1f;
+        d->regs.r.shamt = (instr >> 6) & 0x1f;
+        int funct = instr & 0x3f;
+        d->regs.r.funct = funct; //6 bits
 
         //Lookup operation with funct
         
 
         //Register Reads 
-        rVals.R_rs = mips.registers[d.regs.r.rs];
-        rVals.R_rt = mips.registers[d.regs.r.rt];
-        rVals.R_rd = mips.registers[d.regs.r.rd];
+        rVals->R_rs = mips.registers[d->regs.r.rs];
+        rVals->R_rt = mips.registers[d->regs.r.rt];
+        rVals->R_rd = mips.registers[d->regs.r.rd];
 
     } else if(opcode == 2 || opcode == 3){
-        d.type = InstrType.J;
-
-        d.regs.j.target = instr & 0x3FFFFFF;
+        d->type = 2; //J Instruction
+        // unsigned int temp;
+        // temp = instr;
+        // temp = temp & 0x03FFFFF;
+        // d->regs.j.target = temp;
+        d->regs.j.target = instr & 0x03FFFFF;
 
     } else {
-        d.type = InstrType.I;
+        d->type = 1; //I instruction
 
-        d.regs.i.rs = (instr >> 21) & 0x1f; //Isloate 5 bits
-        d.regs.i.rt = (instr >> 16) & 0x1f;
+        d->regs.i.rs = (instr >> 21) & 0x1f; //Isloate 5 bits
+        d->regs.i.rt = (instr >> 16) & 0x1f;
 
         //Is this the properly extended version?
-        d.regs.addr_or_immed = instr & 0xFFFF; //First 16 bits
+        d->regs.i.addr_or_immed = instr & 0x0000FFFF; //First 16 bits
 
         //Register Reads
-        rVals.R_rs = mips.registers[d.regs.i.rs];
-        rVals.R_rt = mips.registers[d.regs.i.rt];
+        rVals->R_rs = mips.registers[d->regs.i.rs];
+        rVals->R_rt = mips.registers[d->regs.i.rt];
 
-        
     }
 
 }
@@ -235,8 +237,8 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
  */
 void PrintInstruction ( DecodedInstr* d) {
     /* Your code goes here */
-    if (d.op == 0){
-        switch (d.regs.r.funct){
+    if (d->op == 0){
+        switch (d->regs.r.funct){
             case 0x21: //addu
                 printf("addu\t");
                 break;
@@ -272,12 +274,12 @@ void PrintInstruction ( DecodedInstr* d) {
             default:
             exit(0);
         }
-    } else if(d.op == 2){
-        print("j\t");
-    } else if(d.op == 3){
-        print("jal\t");
+    } else if(d->op == 2){
+        printf("j\t");
+    } else if(d->op == 3){
+        printf("jal\t");
     } else {
-        switch(d.op){
+        switch(d->op){
             case 9: //addiu
                 printf("addiu\t");
                 break;
@@ -316,114 +318,116 @@ void PrintInstruction ( DecodedInstr* d) {
         }
     }
 
-    if (d.type == InstrType.R){
-        if (d.regs.r.funct == 0x8){ //jr
-            printf("$%d", d.regs.r.rs);
-        } else if (d.regs.r.funct == 0x0 || d.regs.r.funct == 0x2){ //sll
-            printf("$%d, $%d, %d", d.regs.r.rd, d.regs.r.rt, d.regs.r.shamt);
+    if (d->type == 0){
+        if (d->regs.r.funct == 0x8){ //jr
+            printf("$%d\n", d->regs.r.rs);
+        } else if (d->regs.r.funct == 0x0 || d->regs.r.funct == 0x2){ //sll
+            printf("$%d, $%d, %d\n", d->regs.r.rd, d->regs.r.rt, d->regs.r.shamt);
         } else { //add
-            printf("$%d, $%d, $%d", d.regs.r.rd, d.regs.r.rs, d.regs.r.rt);
+            printf("$%d, $%d, $%d\n", d->regs.r.rd, d->regs.r.rs, d->regs.r.rt);
         }
-    } else if (d.type == InstrType.I){
-        if (d.op == 35 || d.op == 43){ //lw and store word
-            printf("$%d, %d($%d)", d.regs.i.rt, d.regs.i.addr_or_immed, d.regs.i.rs);
-        } else if(d.op == 4 || d.op == 5){ //branch
-            printf("$%d, $%d, %x", d.regs.i.rs, d.regs.i.rt, d.regs.i.addr_or_immed);
-        } else if(d.op == 15 || d.op == 12 || d.op == 13){ //andi, ori, lui
-            printf("$%d, $%d, %x", d.regs.i.rt, d.regs.i.rs, d.regs.i.addr_or_immed);
+    } else if (d->type == 1){
+        if (d->op == 35 || d->op == 43){ //lw and store word
+            printf("$%d, %d($%d)\n", d->regs.i.rt, d->regs.i.addr_or_immed, d->regs.i.rs);
+        } else if(d->op == 4 || d->op == 5){ //branch
+            printf("$%d, $%d, %x\n", d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed);
+        } else if(d->op == 15 || d->op == 12 || d->op == 13){ //andi, ori, lui
+            printf("$%d, $%d, %x\n", d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
         } else{ //addi
-            printf("$%d, $%d, %d", d.regs.i.rt, d.regs.i.rs, d.regs.i.addr_or_immed);
+            printf("$%d, $%d, %d\n", d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
         }
-    } else if (d.type == InstrType.J){
-        printf("%x", d.regs.j.target)
+    } else if (d->type == 2){
+        printf("0x%x\n", d->regs.j.target);
     }
 }
 
 /* Perform computation needed to execute d, returning computed value */
-int Execute ( DecodedInstr* d, RegVals* rVals) {
+int Execute (DecodedInstr* d, RegVals* rVals) {
     /* Your code goes here */
-    if (d.op == 0){
-        switch (d.regs.r.funct){
+    if (d->op == 0){
+        switch (d->regs.r.funct){
             case 0x21: //addu
-                return (unsigned)(rVals.R_rs + rVals.R_rt);
+                return (unsigned)(rVals->R_rs + rVals->R_rt);
                 break;
 
             case 0x23: //subu
-                return (unsigned)(rVals.R_rs - rVals.R_rt);
+                return (unsigned)(rVals->R_rs - rVals->R_rt);
                 break;
 
             case 0x0: //sll
-                return (rVals.R_rt << d.regs.r.shamt);
+                return (rVals->R_rt << d->regs.r.shamt);
                 break;
 
             case 0x2: //srl
-                return (rVals.R_rt >> d.regs.r.shamt);
+                return (rVals->R_rt >> d->regs.r.shamt);
                 break;
 
             case 0x24: //and
-                return (rVals.R_rt & rVals.R_rs);
+                return (rVals->R_rt & rVals->R_rs);
                 break;
 
             case 0x25: //or
-                return (rVals.R_rt | rVals.R_rs);
+                return (rVals->R_rt | rVals->R_rs);
                 break;
 
             case 0x2a: //slt
-                return (int)(rVals.R_rt < rVals.R_rs);
+                return (int)(rVals->R_rt < rVals->R_rs);
                 break;
 
             case 0x8: //jr
-                return rVals.R_rs;
+                return rVals->R_rs;
                 break;
 
             default:
             exit(0);
         }
-    } else if(d.op == 2){ //return address for UpdatePC
-        return d.regs.j.target;
-    } else if(d.op == 3){ //return address for UpdatePC
-        return d.regs.j.target;
+    } else if(d->op == 2){ //j (return address for UpdatePC)
+        return d->regs.j.target;
+    } else if(d->op == 3){ //jal (return address for UpdatePC)
+        return d->regs.j.target;
     } else {
-        switch(d.op){
+        int shifted;
+        switch(d->op){
             case 9: //addiu
-                return (unsigned)(rVals.R_rs + d.regs.i.addr_or_immed);
+                return (unsigned)(rVals->R_rs + d->regs.i.addr_or_immed);
                 break;
 
             case 8: //andi
-                return (rVals.R_rs & d.regs.i.addr_or_immed);
+                return (rVals->R_rs & d->regs.i.addr_or_immed);
                 break;
 
             case 13: //ori
-                return (rVals.R_rs | d.regs.i.addr_or_immed);
+                return (rVals->R_rs | d->regs.i.addr_or_immed);
                 break;
 
             case 15: //lui
-                int shifted = (d.regs.i.addr_or_immed << 16);
+                //int shifted
+                shifted = (d->regs.i.addr_or_immed << 16);
                 return shifted;
                 break;
 
             case 4: //beq
-                if(rVals.R_rs == rVals.R_rt){ //return branch address
-                    return d.regs.i.addr_or_immed;
+                if(rVals->R_rs == rVals->R_rt){ //return branch address
+                    return d->regs.i.addr_or_immed;
                 } else{
                     return 0;
                 }
                 break;
 
             case 5: //bne
-                if(rVals.R_rs == rVals.R_rt){ //return branch address
+                if(rVals->R_rs == rVals->R_rt){ //return branch address
                     return 0; //0 means dont add to the branch address
                 } else{
-                    return d.regs.i.addr_or_immed;
+                    return d->regs.i.addr_or_immed;
                 }
                 break;
 
             case 35: //lw
-                return rVals.R_rs + d.regs.i.addr_or_immed 
+                return rVals->R_rs + d->regs.i.addr_or_immed;
                 break;
 
             case 43: //sw
-                return rVals.R_rs + d.regs.i.addr_or_immed 
+                return rVals->R_rs + d->regs.i.addr_or_immed;
                 break;
 
             default: //bad instruction
@@ -441,13 +445,48 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
  * increments by 4 (which we have provided).
  */
 void UpdatePC ( DecodedInstr* d, int val) {
-    mips.pc+=4;
     /* Your code goes here */
-    if (d.op == 2 || d.op == 3){ //jumps
-        mips.pc = val;
+    // if (d->op == 2 || d->op == 3){ //jumps
+    //     mips.pc = val;
 
-    } else (d.op == 4 || d.op == 5){ // branches
-        mip.pc += val;
+    // } else //(d->op == 4 || d->op == 5){ //branches
+    //     {
+    //     mips.pc += val;
+    //     }
+    // mips.pc+=4;
+    unsigned int pcTemp;
+
+    switch (d->op) {
+        case 0: 
+            if (d->regs.r.funct == 8) {
+                mips.pc = mips.registers[val];
+            }
+            else {
+                mips.pc += 4;
+            }
+            break;
+
+        case 2: //jump
+            pcTemp = mips.pc;
+            val = val << 2;
+            pcTemp = pcTemp & 0xf0000000;
+            mips.pc = val + pcTemp;
+            break;
+
+        case 3: //jal (Similar to what was done in the if statements we made)
+            mips.registers[31] = mips.pc + 4;
+
+        case 5: //bne 
+            if ((val & 0x80000000) < 0) {
+                mips.pc = mips.pc + 4 - (val * 4);
+            }
+            else {
+                mips.pc = mips.pc + 4 + (val * 4);
+            }
+            break;
+
+        default: 
+            mips.pc+=4;
     }
 }
 
@@ -464,22 +503,22 @@ void UpdatePC ( DecodedInstr* d, int val) {
 int Mem( DecodedInstr* d, int val, int *changedMem) {
    /* Your code goes here */
     if (val >= MAXNUMINSTRS+MAXNUMDATA){
-        printf("Memory Access Exception at %d: address %x", mips.pc, val)
+        printf("Memory Access Exception at %d: address %x", mips.pc, val);
         exit(0);
         return -1;
     }
 
 
-    if (d.op == 35){ //lw
+    if (d->op == 35){ //lw
         int loaded_word = mips.memory[val];
         *changedMem = -1;
         return loaded_word;
-    } else if(d.op == 43){//sw
-        mips.memory[val] = mips.registers[d.regs.i.rt];
+    } else if(d->op == 43){//sw
+        mips.memory[val] = mips.registers[d->regs.i.rt];
         *changedMem = val;
         return -1;
     } else {
-        *changedMem = -1
+        *changedMem = -1;
         return val;
     }
 }
@@ -494,19 +533,20 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
 void RegWrite( DecodedInstr* d, int val, int *changedReg) {
     /* Your code goes here */
     if (val != -1){ //If we do something with registers
-        if (d.type == InstrType.R){
-            mips.registers[d.regs.r.rd] = val;
-            *changedReg = d.regs.r.rd;
+        if (d->type == 0){ //R instr
+            mips.registers[d->regs.r.rd] = val;
+            *changedReg = d->regs.r.rd;
 
-        } else if (d.type == InstrType.I){
-            mips.registers[d.regs.i.rt] = val;
-            *changedReg = d.regs.r.rt;
+        } else if (d->type == 1){ //I intsr
+            mips.registers[d->regs.i.rt] = val;
+            *changedReg = d->regs.r.rt;
 
-        } else if (d.type == InstrType.J){
-            if (d.op == 3){
-                mips.registers[31] = val;
-                *changedReg = 31;
-            }
+        } else if (d->type == 2){ //J instr
+            // if (d->op == 3){
+            //     mips.registers[31] = val;
+            //     *changedReg = 31;
+            // }
+            *changedReg = -1;
         }
     }
 }
