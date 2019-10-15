@@ -207,12 +207,13 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
         rVals->R_rd = mips.registers[d->regs.r.rd];
 
     } else if(opcode == 2 || opcode == 3){
-        d->type = 2; //J Instruction
+          //d->type = 2; //J Instruction
         // unsigned int temp;
         // temp = instr;
         // temp = temp & 0x03FFFFF;
         // d->regs.j.target = temp;
-        d->regs.j.target = instr & 0x03FFFFF;
+          //d->regs.j.target = instr & 0x03FFFFF;
+
 
     } else {
         d->type = 1; //I instruction
@@ -330,7 +331,7 @@ void PrintInstruction ( DecodedInstr* d) {
         if (d->op == 35 || d->op == 43){ //lw and store word
             printf("$%d, %d($%d)\n", d->regs.i.rt, d->regs.i.addr_or_immed, d->regs.i.rs);
         } else if(d->op == 4 || d->op == 5){ //branch
-            printf("$%d, $%d, %x\n", d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed);
+            printf("$%d, $%d, %x\n", d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
         } else if(d->op == 15 || d->op == 12 || d->op == 13){ //andi, ori, lui
             printf("$%d, $%d, %x\n", d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
         } else{ //addi
