@@ -207,12 +207,12 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
         rVals->R_rd = mips.registers[d->regs.r.rd];
 
     } else if(opcode == 2 || opcode == 3){
-          //d->type = 2; //J Instruction
+        d->type = 2; //J Instruction
         // unsigned int temp;
         // temp = instr;
         // temp = temp & 0x03FFFFF;
         // d->regs.j.target = temp;
-          //d->regs.j.target = instr & 0x03FFFFF;
+        d->regs.j.target = instr & 0x03FFFFF;
 
 
     } else {
@@ -220,6 +220,7 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
 
         d->regs.i.rs = (instr >> 21) & 0x1f; //Isloate 5 bits
         d->regs.i.rt = (instr >> 16) & 0x1f;
+
 
         //Is this the properly extended version?
         d->regs.i.addr_or_immed = instr & 0x0000FFFF; //First 16 bits
@@ -319,7 +320,7 @@ void PrintInstruction ( DecodedInstr* d) {
         }
     }
 
-    if (d->type == 0){
+    if (d->type == 0){ //R instruction
         if (d->regs.r.funct == 0x8){ //jr
             printf("$%d\n", d->regs.r.rs);
         } else if (d->regs.r.funct == 0x0 || d->regs.r.funct == 0x2){ //sll
@@ -327,7 +328,7 @@ void PrintInstruction ( DecodedInstr* d) {
         } else { //add
             printf("$%d, $%d, $%d\n", d->regs.r.rd, d->regs.r.rs, d->regs.r.rt);
         }
-    } else if (d->type == 1){
+    } else if (d->type == 1){ //I instruction
         if (d->op == 35 || d->op == 43){ //lw and store word
             printf("$%d, %d($%d)\n", d->regs.i.rt, d->regs.i.addr_or_immed, d->regs.i.rs);
         } else if(d->op == 4 || d->op == 5){ //branch
@@ -337,7 +338,7 @@ void PrintInstruction ( DecodedInstr* d) {
         } else{ //addi
             printf("$%d, $%d, %d\n", d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
         }
-    } else if (d->type == 2){
+    } else if (d->type == 2){ //J instruction
         printf("0x%x\n", d->regs.j.target);
     }
 }
@@ -390,7 +391,8 @@ int Execute (DecodedInstr* d, RegVals* rVals) {
         int shifted;
         switch(d->op){
             case 9: //addiu
-                return (unsigned)(rVals->R_rs + d->regs.i.addr_or_immed);
+                //return (unsigned)(rVals->R_rs + d->regs.i.addr_or_immed);
+                return (rVals->R_rs + d->regs.i.addr_or_immed);
                 break;
 
             case 8: //andi
