@@ -185,7 +185,7 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
     //Decode Instruction
 
     //Find opcode (26th - 32nd bit)... we use AND operator to isolate first 6 bits
-    int opcode = (instr >> 26) & 0x3f;
+    unsigned int opcode = (instr >> 26) & 0x3f;
     d->op = opcode;
 
     if (opcode == 0){ //Identify format based on opcode use InstrType Enum
