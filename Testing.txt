@@ -1,0 +1,15 @@
+Testing
+
+Test Case 1:
+Withing this test case is a simple three line instructions. It involves using an add immediate, then subtracting the two in each register.
+
+Test Case 2:
+From the simple example, we go to trying to test a loop with bne. Bne was a difficult instruction to implement initially but the loop shows it is working well for different cases.
+
+Test Case 3:
+Load and store word are used here but ihcorecctly to trigger a exit(0) within the actual code. It will work for most of the instructions.
+
+Test Case 4:
+Again this reverts to the simple adding example but going through each register. The registers are circled through to make sure each of them work then calls for user input.
+
+The testing done throughout these test cases were just to redo cases from the sample.s, while also covering other cases that weren't involved. 

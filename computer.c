@@ -584,4 +584,3 @@ void RegWrite( DecodedInstr* d, int val, int *changedReg) {
         }
     }
 }
-
